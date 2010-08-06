@@ -3,7 +3,6 @@ The client can connect to the server with javascript like the following:
 var host = "ws://127.0.0.1:9000";
 try {
 	socket = new WebSocket(host);
-	console.log('WebSocket - status '+socket.readyState);
 	socket.onopen    = function(msg){ console.log("Connected"); };
 	socket.onmessage = function(msg){ console.log(msg.data); };
 	socket.onclose   = function(msg){ console.log("Disconnected"); };
