@@ -1,0 +1,17 @@
+The client can connect to the server with javascript like the following:
+
+var host = "ws://127.0.0.1:9000";
+try {
+	socket = new WebSocket(host);
+	console.log('WebSocket - status '+socket.readyState);
+	socket.onopen    = function(msg){ console.log("Welcome - status "+this.readyState); };
+	socket.onmessage = function(msg){ console.log("Received: "+msg.data); };
+	socket.onclose   = function(msg){ console.log("Disconnected - status "+this.readyState); };
+}
+catch(ex){ console.log(ex); }
+
+Use socket.send('string'); to push data to the server. Look in ./app/Action.php to
+handle the input the client sends. You could use some sort of auth system on the
+first connection to tie a Client to your web app's users. Find something useful that
+you can do with that knowledge :)
+
