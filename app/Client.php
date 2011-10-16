@@ -152,14 +152,14 @@ class Client {
 	
 	public function handleLogin($in) {
 		$request = $upgrade = $connection = $host = $origin = $key = $version = '';
-		if (preg_match('/GET (.*) HTTP/',                       $in,$m)) $request    = $m[1];
-		if (preg_match('/Upgrade: (.*)(\r\n|$)/',               $in,$m)) $upgrade    = $m[1];
-		if (preg_match('/Connection: (.*)(\r\n|$)/',            $in,$m)) $connection = $m[1];
-		if (preg_match('/Host: (.*)(\r\n|$)/',                  $in,$m)) $host       = $m[1];
-		if (preg_match('/Origin: (.*)(\r\n|$)/',                $in,$m)) $origin     = $m[1];
-		if (preg_match('/Sec-WebSocket-Key: (.*)(\r\n|$)/',     $in,$m)) $key        = $m[1];
-		if (preg_match('/Sec-WebSocket-Version: (.*)(\r\n|$)/', $in,$m)) $version    = $m[1];
-		unset($m);
+
+		$headers = http_parse_headers($in);
+		if (isset($headers['Upgrade']))               $upgrade    = $headers['Upgrade'];
+		if (isset($headers['Connection']))            $connection = $headers['Connection'];
+		if (isset($headers['Host']))                  $host       = $headers['Host'];
+		if (isset($headers['Origin']))                $origin     = $headers['Origin'];
+		if (isset($headers['Sec-Websocket-Key']))     $key        = $headers['Sec-Websocket-Key'];
+		if (isset($headers['Sec-Websocket-Version'])) $version    = $headers['Sec-Websocket-Version'];
 
 		if (!$key) {
 			$this->rejectConnection();
