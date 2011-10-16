@@ -91,12 +91,6 @@ class WebSocketFrame {
 		}
 	}
 
-	private static function string_shift(&$string, $bytes = 1) {
-		$chr = substr($string, 0, $bytes);
-		$string = substr($string, $bytes);
-		return $chr;
-	} // function string_shift
-
 	private static function transformData($data, $maskingKey) {
 		for ($i=0, $len = strlen($data); $i < $len; $i++) { 
 			$data[$i] = $data[$i] ^ $maskingKey[$i%4];
