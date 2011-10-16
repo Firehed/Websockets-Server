@@ -16,7 +16,7 @@ class Action {
 			Server::messageAll('Message for all: ' . substr($input, 3));
 		}
 		else {
-			$client->message("You said $input!");
+			// $client->message("You said $input!");
 		}
 	} // function perform
 } // class Action
