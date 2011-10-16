@@ -7,12 +7,18 @@ class WebSocketFrame {
 	function __construct($frame) {
 		echo "Decoding Frame:\n";
 
-		$protcol = ord(self::string_shift($frame));
-		$this->fin  = (bool) ($protcol & 0x80);
-		$this->rsv1 = (bool) ($protcol & 0x40);
-		$this->rsv2 = (bool) ($protcol & 0x20);
-		$this->rsv3 = (bool) ($protcol & 0x10);
-		$this->opcode = $protcol & 0xF;
+		$header = unpack('ninfo', substr($frame, 0, 2));
+		$info = $header['info'];
+
+		$snip = 2; // this will be trimmed off the beginning of the frame as non-payload
+
+		$this->fin  = (bool) ($info & 0x8000);
+		$this->rsv1 = (bool) ($info & 0x4000);
+		$this->rsv2 = (bool) ($info & 0x2000);
+		$this->rsv3 = (bool) ($info & 0x1000);
+		$this->opcode =      ($info & 0x0F00) >> 8;
+		$masked       =       $info & 0x0080;
+		$len          =       $info & 0x007F;
 
 		switch ($this->opcode) {
 			case 0:
@@ -56,17 +62,15 @@ class WebSocketFrame {
 			break;
 		}
 
-		$lenMask = ord(self::string_shift($frame));
-		$masked  = (bool) ($lenMask & 0x80);
-		$len  = $lenMask & 0x7F;
-
 		if ($len == 126) {
-			$len = self::string_shift($frame, 2);
+			$len = substr($frame, $snip, 2);
+			$snip += 2;
 			$unpacked = unpack('nlen', $len);
 			$this->len = $unpacked['len'];
 		}
 		elseif ($len == 127) {
-			$len = self::string_shift($frame, 8);
+			$len = substr($frame, $snip, 8);
+			$snip += 8;
 			$unpacked = unpack('Nh/Nl', $len); // php's pack doesn't have a specific unsigned 64-bit int format, hack it
 			$this->len = $unpacked['h'] << 32 | $unpacked['l'];
 		}
@@ -78,11 +82,12 @@ class WebSocketFrame {
 		print_r($this);
 
 		if ($masked) {
-			$maskingKey = self::string_shift($frame, 4);
-			$this->payload = self::transformData($frame, $maskingKey);
+			$maskingKey = substr($frame, $snip, 4);
+			$snip += 4;
+			$this->payload = self::transformData(substr($frame, $snip), $maskingKey);
 		}
 		else {
-			$this->payload = $frame;
+			$this->payload = substr($frame, $snip);
 		}
 	}
 
