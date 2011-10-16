@@ -8,6 +8,7 @@ class Server {
 	
 	public static function start($address, $port) {
 		if (self::$app !== NULL) throw new Exception('One server at a time!');
+		if (!self::test()) exit(1);
 		
 		self::$app = socket_create(AF_INET, SOCK_STREAM, 0);
 		socket_set_option(self::$app, SOL_SOCKET, SO_REUSEADDR, 1);
@@ -17,6 +18,15 @@ class Server {
 		
 		self::run();
 	} // function start
+	
+	public static function test() {
+		$ok = true;
+		if (!function_exists('http_parse_headers')) {
+			echo "Function missing: http_parse_headers (pecl install pecl_http)\n";
+			$ok = false;
+		}
+		return $ok;
+	} // function test
 	
 	public static function stop() {
 		self::messageAll("*** The server is shutting down now. ***");
