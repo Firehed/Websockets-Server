@@ -1,5 +1,8 @@
 <?php
 
+// Reserved for protocol violations, status code 1002
+class FailWebSocketConnectionException extends Exception {}
+
 class WebSocketFrame {
 
 	public $payload;
@@ -24,6 +27,18 @@ class WebSocketFrame {
 		$masked =         $info & 0x0080;
 		$len    =         $info & 0x007F;
 
+		if ($rsv1) {
+			throw new FailWebSocketConnectionException('RSV1 set without known meaning');
+		}
+
+		if ($rsv2) {
+			throw new FailWebSocketConnectionException('RSV2 set without known meaning');
+		}
+
+		if ($rsv3) {
+			throw new FailWebSocketConnectionException('RSV3 set without known meaning');
+		}
+
 		switch ($opcode) {
 			case 0:
 			// continuation frame
@@ -42,7 +57,8 @@ class WebSocketFrame {
 			case 5:
 			case 6:
 			case 7:
-			// reseved for non-control frames
+				// reseved for non-control frames
+				throw new FailWebSocketConnectionException('Use of reserved non-control frame opcode');
 			break;
 
 			case 8:
@@ -62,7 +78,8 @@ class WebSocketFrame {
 			case 13:
 			case 14:
 			case 15:
-			// reserved for control frames
+				// reserved for control frames
+				throw new FailWebSocketConnectionException('Use of reserved control frame opcode');
 			break;
 		}
 
@@ -86,6 +103,7 @@ class WebSocketFrame {
 			$payload = self::transformData(substr($frame, $snip), $maskingKey);
 		}
 		else {
+			// The spec is unclear if this condition should actually fail the connection, since it says clients MUST mask payload
 			$payload = substr($frame, $snip);
 		}
 		return new WebSocketFrame($payload);
