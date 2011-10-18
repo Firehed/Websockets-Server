@@ -121,13 +121,27 @@ class Client {
 		socket_write($this->socket, "\x00$message\xFF");
 	} // function message
 
-
 	public function handleInput() {
 		// Reading very long messages (32k+) seems buggy even with a very high $input param, so read a byte at a time until EOM
 		$input = '';
-		while (false !== ($byte = socket_read($this->socket, 1))) {
-			$input .= $byte;
-		}
+		$read = true;
+		do {
+			$byte = socket_read($this->socket, 1);
+			if ($byte === false) {
+				// error/disconnect
+				$read = false;
+			}
+			elseif ($byte === '') {
+				// End of message
+				$read = false;
+			}
+			else {
+				// Received byte, continue reading
+				$input .= $byte;
+			}
+		} while ($read);
+
+		// Empty packet: disconnect
 		if (!$input) {
 			$this->disconnect();
 			return;
@@ -141,7 +155,7 @@ class Client {
 		// Action::perform($this, $input);
 		
 	} // function handleInput
-	
+
 	public function handleLogin($in) {
 		$request = $upgrade = $connection = $host = $origin = $key = $version = '';
 
