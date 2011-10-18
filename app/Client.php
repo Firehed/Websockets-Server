@@ -5,12 +5,12 @@ class WebSocketFrame {
 	public $payload;
 
 	function __construct($frame) {
-		echo "Decoding Frame:\n";
+		$snip = 0; // this will be trimmed off the beginning of the frame as non-payload
 
 		$header = unpack('ninfo', substr($frame, 0, 2));
+		$snip += 2;
 		$info = $header['info'];
 
-		$snip = 2; // this will be trimmed off the beginning of the frame as non-payload
 
 		$this->fin  = (bool) ($info & 0x8000);
 		$this->rsv1 = (bool) ($info & 0x4000);
@@ -78,9 +78,6 @@ class WebSocketFrame {
 			$this->len = $len;
 		}
 
-		// echo "Length: $this->len\n";
-		print_r($this);
-
 		if ($masked) {
 			$maskingKey = substr($frame, $snip, 4);
 			$snip += 4;
@@ -126,7 +123,11 @@ class Client {
 
 
 	public function handleInput() {
-		$input = socket_read($this->socket, 100000/*1024*/);
+		// Reading very long messages (32k+) seems buggy even with a very high $input param, so read a byte at a time until EOM
+		$input = '';
+		while (false !== ($byte = socket_read($this->socket, 1))) {
+			$input .= $byte;
+		}
 		if (!$input) {
 			$this->disconnect();
 			return;
@@ -137,15 +138,6 @@ class Client {
 			return;
 		}
 		$frame = new WebSocketFrame($input);
-		if ($p = $frame->payload) {
-			if (isset($p[150]))
-				echo "Length of " . strlen($p);
-			else 
-				echo $p;
-				
-		}
-		echo "\n\n\n";
-		
 		// Action::perform($this, $input);
 		
 	} // function handleInput
