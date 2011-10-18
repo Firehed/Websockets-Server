@@ -4,7 +4,11 @@ class WebSocketFrame {
 
 	public $payload;
 
-	function __construct($frame) {
+	public function __construct($payload) {
+		$this->payload = $payload;
+	} // function __construct
+
+	public static function decode($frame) {
 		$snip = 0; // this will be trimmed off the beginning of the frame as non-payload
 
 		$header = unpack('ninfo', substr($frame, 0, 2));
@@ -12,15 +16,15 @@ class WebSocketFrame {
 		$info = $header['info'];
 
 
-		$this->fin  = (bool) ($info & 0x8000);
-		$this->rsv1 = (bool) ($info & 0x4000);
-		$this->rsv2 = (bool) ($info & 0x2000);
-		$this->rsv3 = (bool) ($info & 0x1000);
-		$this->opcode =      ($info & 0x0F00) >> 8;
-		$masked       =       $info & 0x0080;
-		$len          =       $info & 0x007F;
+		$fin    = (bool) ($info & 0x8000);
+		$rsv1   = (bool) ($info & 0x4000);
+		$rsv2   = (bool) ($info & 0x2000);
+		$rsv3   = (bool) ($info & 0x1000);
+		$opcode =        ($info & 0x0F00) >> 8;
+		$masked =         $info & 0x0080;
+		$len    =         $info & 0x007F;
 
-		switch ($this->opcode) {
+		switch ($opcode) {
 			case 0:
 			// continuation frame
 			break;
@@ -62,30 +66,29 @@ class WebSocketFrame {
 			break;
 		}
 
+		// If basic length field was one of the magic numbers, read further into the header to get the actual length
 		if ($len == 126) {
 			$len = substr($frame, $snip, 2);
 			$snip += 2;
 			$unpacked = unpack('nlen', $len);
-			$this->len = $unpacked['len'];
+			$len = $unpacked['len'];
 		}
 		elseif ($len == 127) {
 			$len = substr($frame, $snip, 8);
 			$snip += 8;
 			$unpacked = unpack('Nh/Nl', $len); // php's pack doesn't have a specific unsigned 64-bit int format, hack it
-			$this->len = $unpacked['h'] << 32 | $unpacked['l'];
-		}
-		else {
-			$this->len = $len;
+			$len = ($unpacked['h'] << 32) | $unpacked['l'];
 		}
 
 		if ($masked) {
 			$maskingKey = substr($frame, $snip, 4);
 			$snip += 4;
-			$this->payload = self::transformData(substr($frame, $snip), $maskingKey);
+			$payload = self::transformData(substr($frame, $snip), $maskingKey);
 		}
 		else {
-			$this->payload = substr($frame, $snip);
+			$payload = substr($frame, $snip);
 		}
+		return new WebSocketFrame($payload);
 	}
 
 	private static function transformData($data, $maskingKey) {
