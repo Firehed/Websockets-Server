@@ -154,7 +154,7 @@ class Client {
 			$this->handleLogin($input);
 			return;
 		}
-		$frame = new WebSocketFrame($input);
+		$frame = WebSocketFrame::decode($input);
 		// Action::perform($this, $input);
 		
 	} // function handleInput
