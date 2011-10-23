@@ -6,10 +6,33 @@ class FailWebSocketConnectionException extends Exception {}
 class WebSocketFrame {
 
 	public $payload;
+	private $mask;
 
-	public function __construct($payload) {
+	public function __construct($payload, $mask = null) {
 		$this->payload = $payload;
+		$this->mask    = $mask;
 	} // function __construct
+
+	public function __toString() {
+		$head = chr(0x81); // fin=1, rsv1-3=0, opcode=1
+		$len = strlen($this->payload);
+		if ($len <= 125) {
+			$lenFrame = chr($len);
+		}
+		elseif ($len <= 0xFFFF) {
+			$lenFrame = chr(126) . pack('n', $len);
+		}
+		else {
+			$lenFrame = chr(127) . pack('NN', ($len & 0xFFFFFFFF00000000), ($len & 0x00000000FFFFFFFF));
+		}
+		if ($this->mask) {
+			$lenFrame[0] = chr(ord($lenFrame[0]) | 0x80); // bitmask in "masked" flag
+			return $head . $lenFrame . $this->mask . self::transformData($this->payload, $this->mask);
+		}
+		else {
+			return $head . $lenFrame . $this->payload;
+		}
+	} // function __toString
 
 	public static function decode($frame) {
 		$snip = 0; // this will be trimmed off the beginning of the frame as non-payload
@@ -139,7 +162,7 @@ class Client {
 		echo "Sending message:\n";
 		echo $message, "\n";
 		
-		socket_write($this->socket, "\x00$message\xFF");
+		socket_write($this->socket, new WebSocketFrame($message));
 	} // function message
 
 	public function handleInput() {
@@ -205,7 +228,7 @@ class Client {
 
 		socket_write($this->socket, $upgrade);
 		$this->state = self::State_Connected;
-		// $this->message('foo');
+		$this->message('foo');
 		
 	} // function handleLogin
 
