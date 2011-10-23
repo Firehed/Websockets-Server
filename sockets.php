@@ -4,6 +4,7 @@
 set_time_limit(0);
 include 'config.php';
 include 'app/Action.php';
+include 'app/WebSocketFrame.php';
 include 'app/Client.php';
 include 'app/Server.php';
 
