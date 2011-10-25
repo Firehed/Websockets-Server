@@ -47,7 +47,7 @@ class WebSocketFrame {
 		$rsv2   = (bool) ($info & 0x2000);
 		$rsv3   = (bool) ($info & 0x1000);
 		$opcode =        ($info & 0x0F00) >> 8;
-		$masked =         $info & 0x0080;
+		$masked = (bool) ($info & 0x0080);
 		$len    =         $info & 0x007F;
 
 		if ($rsv1) {
