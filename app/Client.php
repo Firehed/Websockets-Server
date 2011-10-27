@@ -13,6 +13,7 @@ class Client {
 	
 	public function __construct($socket) {
 		$this->socket = $socket;
+		socket_set_nonblock($this->socket);
 		$this->position = ++self::$count;
 		$this->state = self::State_New;
 	} // function __construct
