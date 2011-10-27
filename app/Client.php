@@ -18,9 +18,6 @@ class Client {
 	} // function __construct
 	
 	public function message($message) {
-		echo "Sending message:\n";
-		echo $message, "\n";
-		
 		socket_write($this->socket, new WebSocketFrame($message));
 	} // function message
 
@@ -55,7 +52,9 @@ class Client {
 			return;
 		}
 		$frame = WebSocketFrame::decode($input);
-		// Action::perform($this, $input);
+		if (null !== $msg = json_decode($frame->payload)) {
+			Server::messageAll($frame->payload);
+		}
 		
 	} // function handleInput
 
@@ -104,10 +103,6 @@ class Client {
 	} // function getPosition
 	
 	public function disconnect() {
-
-		echo "\n\n=======DISCONNECTED=======\n\n";
-		
-		
 		socket_close($this->socket);
 		Server::removeClient($this);
 	} // function disconnect
